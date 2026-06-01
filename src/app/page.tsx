@@ -1,18 +1,65 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useInView } from '@/hooks/useInView'
+
+// ---------------------------------------------------------------------------
+// CountUp — animates a number from 0 to `target` when `active` is true
+// ---------------------------------------------------------------------------
+function CountUp({ target, suffix = '' }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0)
+  const { ref, inView } = useInView<HTMLSpanElement>()
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (!inView || started.current) return
+    started.current = true
+    const duration = 1400
+    const steps = 60
+    const interval = duration / steps
+    const increment = target / steps
+    let current = 0
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= target) {
+        setCount(target)
+        clearInterval(timer)
+      } else {
+        setCount(Math.floor(current))
+      }
+    }, interval)
+    return () => clearInterval(timer)
+  }, [inView, target])
+
+  return (
+    <span ref={ref}>
+      {count}
+      {suffix}
+    </span>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Hero Section
 // ---------------------------------------------------------------------------
 // VIDEO PLACEHOLDER
 // To replace with a real video:
-//   1. Upload your video file to Supabase Storage
-//      → Supabase Dashboard > Storage > Create bucket (e.g. "assets") > Upload file
-//      → Set bucket to "Public" to get a public URL
-//   2. Copy the public URL (looks like: https://<project>.supabase.co/storage/v1/object/public/assets/hero.mp4)
-//   3. Add  src="<paste URL here>"  to the <video> element below
-//   4. You can then remove or reduce the opacity of the gradient overlay div
+//   1. Supabase Dashboard → Storage → Create bucket (e.g. "assets", Public)
+//   2. Upload your video file
+//   3. Copy the public URL:
+//      https://<project-id>.supabase.co/storage/v1/object/public/assets/hero.mp4
+//   4. Add  src="<paste URL here>"  to the <video> element below
+//   5. Remove or reduce opacity of the gradient overlay once video is in place
 // ---------------------------------------------------------------------------
 function HeroSection() {
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoaded(true), 100)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <section className="relative h-screen flex items-center overflow-hidden bg-blue-900">
       {/* Video — swap src="" with Supabase public URL when ready */}
@@ -28,34 +75,55 @@ function HeroSection() {
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 via-blue-900/60 to-transparent" />
 
-      {/* Content */}
+      {/* Content — entrance animation on mount */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 w-full">
         <div className="max-w-xl">
-          <p className="text-blue-300 text-xs font-semibold tracking-[0.25em] uppercase mb-6">
+          <p
+            className={`text-blue-300 text-xs font-semibold tracking-[0.25em] uppercase mb-6 transition-all duration-700 delay-100 ${
+              loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+          >
             Transport Refrigeration Technology
           </p>
-          <h1 className="text-white text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6">
+          <h1
+            className={`text-white text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 transition-all duration-700 delay-200 ${
+              loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+            }`}
+          >
             Keeping Cold
             <br />
             on Every Road.
           </h1>
-          <p className="text-blue-100/70 text-base lg:text-lg leading-relaxed mb-10 max-w-md">
+          <p
+            className={`text-blue-100/70 text-base lg:text-lg leading-relaxed mb-10 max-w-md transition-all duration-700 delay-300 ${
+              loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+            }`}
+          >
             Donginthermo delivers market-leading refrigeration solutions for commercial
             vehicles, trusted by logistics companies worldwide.
           </p>
-          <div className="flex items-center gap-6">
+          <div
+            className={`flex items-center gap-6 transition-all duration-700 delay-500 ${
+              loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+          >
             <Link
               href="/products/van"
-              className="inline-block bg-blue-500 hover:bg-blue-400 text-white font-medium text-sm tracking-wide px-7 py-3.5 transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-400 active:scale-95 text-white font-medium text-sm tracking-wide px-7 py-3.5 transition-all duration-200"
             >
               View Products
             </Link>
             <Link
               href="/about"
-              className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm font-medium transition-colors group"
             >
               About Us
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="w-4 h-4 transition-transform group-hover:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -78,19 +146,27 @@ function HeroSection() {
 // Company Intro Section
 // ---------------------------------------------------------------------------
 const companyStats = [
-  { value: '20+', label: 'Years of Experience' },
-  { value: '30+', label: 'Product Models' },
-  { value: '6', label: 'Language Markets' },
-  { value: '100+', label: 'Partner Companies' },
+  { value: 20, suffix: '+', label: 'Years of Experience' },
+  { value: 30, suffix: '+', label: 'Product Models' },
+  { value: 6, suffix: '', label: 'Language Markets' },
+  { value: 100, suffix: '+', label: 'Partner Companies' },
 ]
 
 function CompanySection() {
+  const { ref: textRef, inView: textIn } = useInView()
+  const { ref: statsRef, inView: statsIn } = useInView()
+
   return (
     <section className="py-28 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
           {/* Text */}
-          <div>
+          <div
+            ref={textRef}
+            className={`transition-all duration-700 ${
+              textIn ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
+            }`}
+          >
             <p className="text-blue-500 text-xs font-semibold tracking-[0.2em] uppercase mb-4">
               About Donginthermo
             </p>
@@ -113,10 +189,21 @@ function CompanySection() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-4">
-            {companyStats.map((stat) => (
-              <div key={stat.label} className="bg-blue-50 p-8 rounded-lg">
-                <p className="text-4xl font-bold text-blue-600 mb-2">{stat.value}</p>
+          <div
+            ref={statsRef}
+            className="grid grid-cols-2 gap-4"
+          >
+            {companyStats.map((stat, i) => (
+              <div
+                key={stat.label}
+                className={`bg-blue-50 p-8 rounded-lg transition-all duration-500 ${
+                  statsIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
+                style={{ transitionDelay: statsIn ? `${i * 80}ms` : '0ms' }}
+              >
+                <p className="text-4xl font-bold text-blue-600 mb-2">
+                  <CountUp target={stat.value} suffix={stat.suffix} />
+                </p>
                 <p className="text-gray-500 text-sm leading-snug">{stat.label}</p>
               </div>
             ))}
@@ -130,21 +217,59 @@ function CompanySection() {
 // ---------------------------------------------------------------------------
 // History Section
 // ---------------------------------------------------------------------------
-// TODO: Replace placeholder milestones with real company history
 const milestones = [
-  { year: '2000', title: 'Company Founded', desc: 'Donginthermo established in Incheon, Korea, with a focus on transport refrigeration.' },
-  { year: '2005', title: 'First Product Line', desc: 'Launched the DM-050 series for small commercial delivery vehicles.' },
-  { year: '2010', title: 'International Expansion', desc: 'Began exporting products to Southeast Asian and Middle Eastern markets.' },
-  { year: '2015', title: 'Diesel Engine Series', desc: 'Introduced the DS-series high-capacity diesel engine-driven refrigeration units.' },
-  { year: '2020', title: 'EV Technology R&D', desc: 'Launched research and development program for EV battery-driven refrigeration systems.' },
-  { year: '2024', title: 'Global Market Presence', desc: 'Products and documentation available in six languages for international customers.' },
+  { date: '2022. 04', title: 'Acquired ATP certificate', founded: false },
+  { date: '2012. 05', title: 'R&D center established', founded: false },
+  { date: '2010. 01', title: 'CE certified', founded: false },
+  { date: '2001. 07', title: 'ISO 9001 certified, TopCold brand launched', founded: false },
+  { date: '2000. 03', title: "KIA Motor Co., Ltd.'s OEM supplier", founded: false },
+  { date: '1989. 04', title: 'DONGIN THERMO CO., LTD. established', founded: true },
 ]
 
+function HistoryItem({ milestone, index }: { milestone: typeof milestones[number]; index: number }) {
+  const { ref, inView } = useInView({ threshold: 0.3 })
+
+  return (
+    <div
+      ref={ref}
+      className={`relative transition-all duration-600 ${
+        inView ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'
+      }`}
+      style={{ transitionDelay: `${index * 60}ms` }}
+    >
+      {/* Dot */}
+      <div
+        className={`absolute -left-[29px] top-1.5 rounded-full ring-4 ring-gray-50 transition-all duration-500 ${
+          milestone.founded
+            ? 'w-4 h-4 -left-[31px] bg-blue-600 ring-blue-100 scale-100'
+            : inView ? 'w-3 h-3 bg-blue-400 scale-100' : 'w-3 h-3 bg-blue-200 scale-75'
+        }`}
+        style={{ transitionDelay: `${index * 60 + 200}ms` }}
+      />
+      <div className="flex items-baseline gap-4">
+        <span className={`text-sm font-bold tabular-nums shrink-0 ${milestone.founded ? 'text-blue-600' : 'text-blue-400'}`}>
+          {milestone.date}
+        </span>
+        <span className={`leading-relaxed ${milestone.founded ? 'text-gray-900 font-bold text-base' : 'text-gray-700 font-medium text-sm'}`}>
+          {milestone.title}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function HistorySection() {
+  const { ref: headRef, inView: headIn } = useInView()
+
   return (
     <section className="py-28 bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="mb-16">
+        <div
+          ref={headRef}
+          className={`mb-16 transition-all duration-700 ${
+            headIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+          }`}
+        >
           <p className="text-blue-500 text-xs font-semibold tracking-[0.2em] uppercase mb-4">
             Company History
           </p>
@@ -152,17 +277,8 @@ function HistorySection() {
         </div>
 
         <div className="relative pl-6 border-l-2 border-blue-100 space-y-10">
-          {milestones.map((m) => (
-            <div key={m.year} className="relative">
-              {/* Dot */}
-              <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-blue-500 ring-4 ring-gray-50" />
-
-              <div className="flex items-baseline gap-4 mb-1">
-                <span className="text-blue-500 text-sm font-bold tabular-nums">{m.year}</span>
-                <span className="text-gray-900 font-semibold">{m.title}</span>
-              </div>
-              <p className="text-gray-500 text-sm leading-relaxed pl-[4.5rem]">{m.desc}</p>
-            </div>
+          {milestones.map((m, i) => (
+            <HistoryItem key={m.date} milestone={m} index={i} />
           ))}
         </div>
       </div>
@@ -175,19 +291,27 @@ function HistorySection() {
 // ---------------------------------------------------------------------------
 // TODO: Replace with real IP numbers
 const ipItems = [
-  { count: '15+', label: 'Patents Registered' },
-  { count: '8+', label: 'Utility Models' },
-  { count: '10+', label: 'Certifications' },
-  { count: '3+', label: 'International Standards' },
+  { count: 15, suffix: '+', label: 'Patents Registered' },
+  { count: 8, suffix: '+', label: 'Utility Models' },
+  { count: 10, suffix: '+', label: 'Certifications' },
+  { count: 3, suffix: '+', label: 'International Standards' },
 ]
 
 function IPSection() {
+  const { ref: textRef, inView: textIn } = useInView()
+  const { ref: gridRef, inView: gridIn } = useInView()
+
   return (
-    <section className="py-28 bg-blue-600">
+    <section className="py-28 bg-blue-600 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Text */}
-          <div>
+          <div
+            ref={textRef}
+            className={`transition-all duration-700 ${
+              textIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
             <p className="text-blue-200 text-xs font-semibold tracking-[0.2em] uppercase mb-4">
               Intellectual Property
             </p>
@@ -204,13 +328,21 @@ function IPSection() {
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {ipItems.map((item) => (
+          <div
+            ref={gridRef}
+            className="grid grid-cols-2 gap-4"
+          >
+            {ipItems.map((item, i) => (
               <div
                 key={item.label}
-                className="bg-white/10 border border-white/10 rounded-lg p-8"
+                className={`bg-white/10 border border-white/10 rounded-lg p-8 hover:bg-white/20 transition-all duration-500 ${
+                  gridIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
+                style={{ transitionDelay: `${i * 80}ms` }}
               >
-                <p className="text-4xl font-bold text-white mb-2">{item.count}</p>
+                <p className="text-4xl font-bold text-white mb-2">
+                  <CountUp target={item.count} suffix={item.suffix} />
+                </p>
                 <p className="text-blue-200 text-sm">{item.label}</p>
               </div>
             ))}
@@ -225,37 +357,25 @@ function IPSection() {
 // Products Section
 // ---------------------------------------------------------------------------
 const products = [
-  {
-    code: 'VAN',
-    href: '/products/van',
-    title: 'Van Type',
-    desc: 'Compact rooftop refrigeration units engineered for van-type delivery vehicles.',
-  },
-  {
-    code: 'NOSE',
-    href: '/products/nose',
-    title: 'Nose Mount',
-    desc: 'High-capacity front-mounted units for medium and large refrigerated trucks.',
-  },
-  {
-    code: 'ESC',
-    href: '/products/esc',
-    title: 'Electric Standby',
-    desc: 'Hybrid systems with electric standby connection for all-day temperature control.',
-  },
-  {
-    code: 'SUB',
-    href: '/products/sub',
-    title: 'Sub-Zero',
-    desc: 'Deep-freeze capable units for pharmaceuticals and specialty cold chain transport.',
-  },
+  { code: 'VAN',  href: '/products/van',  title: 'Van Type',        imgUrl: '' },
+  { code: 'NOSE', href: '/products/nose', title: 'Nose Type',       imgUrl: '' },
+  { code: 'ESC',  href: '/products/esc',  title: 'ESC Type',        imgUrl: '' },
+  { code: 'SUB',  href: '/products/sub',  title: 'Sub Type',        imgUrl: '' },
 ]
 
 function ProductsSection() {
+  const { ref: headRef, inView: headIn } = useInView()
+  const { ref: gridRef, inView: gridIn } = useInView()
+
   return (
     <section className="py-28 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="flex items-end justify-between mb-16">
+        <div
+          ref={headRef}
+          className={`flex items-end justify-between mb-16 transition-all duration-700 ${
+            headIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+          }`}
+        >
           <div>
             <p className="text-blue-500 text-xs font-semibold tracking-[0.2em] uppercase mb-4">
               Our Products
@@ -266,46 +386,114 @@ function ProductsSection() {
           </div>
           <Link
             href="/products/van"
-            className="hidden md:inline-flex items-center gap-2 text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors"
+            className="hidden md:inline-flex items-center gap-2 text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors group"
           >
             View All
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {products.map((p) => (
+        <div
+          ref={gridRef}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+        >
+          {products.map((p, i) => (
             <Link
               key={p.code}
               href={p.href}
-              className="group block bg-gray-50 hover:bg-blue-600 rounded-lg p-8 transition-all duration-300"
+              className={`group relative block rounded-xl overflow-hidden aspect-[3/4] transition-all duration-500 ${
+                gridIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+              }`}
+              style={{ transitionDelay: `${i * 80}ms` }}
             >
-              <div className="w-11 h-11 bg-blue-100 group-hover:bg-blue-500 rounded-md flex items-center justify-center mb-6 transition-colors">
-                <span className="text-blue-600 group-hover:text-white text-[10px] font-bold tracking-widest">
+              {/* Background image */}
+              {p.imgUrl ? (
+                <img
+                  src={p.imgUrl}
+                  alt={p.title}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-blue-900" />
+              )}
+
+              {/* Dim overlay */}
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/55 transition-colors duration-300" />
+
+              {/* Content */}
+              <div className="absolute inset-0 flex flex-col justify-between p-7">
+                {/* Category badge */}
+                <span className="self-start bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold tracking-[0.15em] uppercase px-3 py-1.5 rounded-full">
                   {p.code}
                 </span>
-              </div>
-              <p className="text-gray-900 group-hover:text-white font-semibold text-lg mb-2 transition-colors">
-                {p.title}
-              </p>
-              <p className="text-gray-500 group-hover:text-blue-100 text-sm leading-relaxed transition-colors">
-                {p.desc}
-              </p>
-              <div className="mt-6 flex items-center gap-1 text-blue-500 group-hover:text-blue-200 text-sm font-medium transition-colors">
-                Learn More
-                <svg
-                  className="w-4 h-4 transition-transform group-hover:translate-x-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+
+                {/* Title + arrow */}
+                <div className="flex items-end justify-between">
+                  <p className="text-white text-xl font-bold leading-tight">{p.title}</p>
+                  <div className="w-9 h-9 rounded-full bg-white/20 group-hover:bg-white/30 flex items-center justify-center transition-colors duration-300 shrink-0 ml-3">
+                    <svg className="w-4 h-4 text-white group-hover:translate-x-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </Link>
           ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// CTA Banner Section  (based on Figma node 2:2)
+// ---------------------------------------------------------------------------
+function CTASection() {
+  const { ref, inView } = useInView()
+
+  return (
+    <section className="py-16 px-6 lg:px-10 bg-gray-50">
+      <div className="max-w-7xl mx-auto">
+        <div
+          ref={ref}
+          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 px-10 py-20 text-center transition-all duration-700 ${
+            inView ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}
+        >
+          {/* Decorative blobs */}
+          <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-300/30 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-blue-400/20 blur-3xl" />
+
+          <div className="relative z-10">
+            <p className="text-blue-500 text-xs font-semibold tracking-[0.25em] uppercase mb-4">
+              Get Started
+            </p>
+            <h2 className="text-blue-900 text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
+              Ready to upgrade
+              <br />
+              your cold chain?
+            </h2>
+            <p className="text-blue-700/70 text-base leading-relaxed max-w-md mx-auto mb-10">
+              Contact Donginthermo to find the right refrigeration solution for your fleet.
+              Our engineers are ready to help.
+            </p>
+            <Link
+              href="/products/van"
+              className="inline-flex items-center gap-2 border border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white font-medium text-sm tracking-wide px-8 py-3.5 rounded-full transition-all duration-200 group"
+            >
+              View Products
+              <svg
+                className="w-4 h-4 transition-transform group-hover:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -323,6 +511,7 @@ export default function Home() {
       <HistorySection />
       <IPSection />
       <ProductsSection />
+      <CTASection />
     </>
   )
 }
